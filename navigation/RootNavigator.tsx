@@ -1,19 +1,54 @@
-// Root navigator with a white-themed bottom tab for the 4 core
-// surfaces (Home / Agents / Approvals / Accounts). On iOS the default
-// dark theme bleeds through, so we hand-roll a light navigation theme
-// built on the ZeniPay tokens.
-
 import React from "react";
 import { NavigationContainer, Theme } from "@react-navigation/native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Home, Bot, CheckSquare, Wallet } from "lucide-react-native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ZP } from "../constants/brand";
-import { HomeScreen } from "../screens/HomeScreen";
-import { AgentsScreen } from "../screens/AgentsScreen";
-import { ApprovalsScreen } from "../screens/ApprovalsScreen";
-import { AccountsScreen } from "../screens/AccountsScreen";
+import { useAppMode } from "../lib/app-mode";
+import { ModeSelectorScreen } from "../screens/ModeSelectorScreen";
+import { MerchantTabs } from "./MerchantTabs";
+import { AgentsTabs } from "./AgentsTabs";
 
-const Tab = createBottomTabNavigator();
+// Shared detail screens accessible from both modes.
+import { AccountDetailScreen } from "../screens/merchant/AccountDetailScreen";
+import { TransactionDetailScreen } from "../screens/merchant/TransactionDetailScreen";
+import { TransactionsScreen } from "../screens/merchant/TransactionsScreen";
+import { CardDetailScreen } from "../screens/merchant/CardDetailScreen";
+import { InvoicesScreen } from "../screens/merchant/InvoicesScreen";
+import { ContactsScreen } from "../screens/merchant/ContactsScreen";
+import { PaymentLinksScreen } from "../screens/merchant/PaymentLinksScreen";
+import { MerchantSettingsScreen } from "../screens/merchant/SettingsScreen";
+import { AgentDetailScreen } from "../screens/agents/AgentDetailScreen";
+import { ZeniCardsScreen } from "../screens/agents/ZeniCardsScreen";
+import { ZeniCardDetailScreen } from "../screens/agents/ZeniCardDetailScreen";
+import { ApprovalsScreen } from "../screens/agents/ApprovalsScreen";
+import { AuditScreen } from "../screens/agents/AuditScreen";
+import { ComplianceScreen } from "../screens/agents/ComplianceScreen";
+import { AgentsSettingsScreen } from "../screens/agents/SettingsScreen";
+
+export type RootStackParamList = {
+  ModeSelector: undefined;
+  MerchantTabs: undefined;
+  AgentsTabs: undefined;
+
+  // Detail / modal routes
+  AccountDetail: { id: string };
+  TransactionDetail: { id: string };
+  Transactions: undefined;
+  CardDetail: { id: string };
+  Invoices: undefined;
+  Contacts: undefined;
+  PaymentLinks: undefined;
+  MerchantSettings: undefined;
+
+  AgentDetail: { id: string };
+  ZeniCards: undefined;
+  ZeniCardDetail: { id: string };
+  Approvals: undefined;
+  Audit: undefined;
+  Compliance: undefined;
+  AgentsSettings: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const THEME: Theme = {
   dark: false,
@@ -25,64 +60,45 @@ const THEME: Theme = {
     border:      ZP.border,
     notification: ZP.violet,
   },
-  // Type-safe for @react-navigation v7.
   fonts: {
-    regular:  { fontFamily: "System", fontWeight: "400" },
-    medium:   { fontFamily: "System", fontWeight: "600" },
-    bold:     { fontFamily: "System", fontWeight: "800" },
-    heavy:    { fontFamily: "System", fontWeight: "900" },
+    regular: { fontFamily: "System", fontWeight: "400" },
+    medium:  { fontFamily: "System", fontWeight: "600" },
+    bold:    { fontFamily: "System", fontWeight: "800" },
+    heavy:   { fontFamily: "System", fontWeight: "900" },
   },
 };
 
 export function RootNavigator() {
+  const { mode } = useAppMode();
+
   return (
     <NavigationContainer theme={THEME}>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarActiveTintColor: ZP.cyan,
-          tabBarInactiveTintColor: ZP.dim,
-          tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopColor: ZP.border,
-            paddingTop: 6,
-            height: 62,
-          },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: "700" },
-          tabBarIcon: ({ color, size }) => {
-            const s = size ?? 22;
-            switch (route.name) {
-              case "Home":      return <Home       size={s} color={color} />;
-              case "Agents":    return <Bot        size={s} color={color} />;
-              case "Approvals": return <CheckSquare size={s} color={color} />;
-              case "Accounts":  return <Wallet     size={s} color={color} />;
-              default:          return null;
-            }
-          },
-        })}
-      >
-        <Tab.Screen name="Home">
-          {() => <HomeScreenWithNav />}
-        </Tab.Screen>
-        <Tab.Screen name="Agents">
-          {() => <AgentsScreenWithNav />}
-        </Tab.Screen>
-        <Tab.Screen name="Approvals">
-          {() => <ApprovalsScreen />}
-        </Tab.Screen>
-        <Tab.Screen name="Accounts">
-          {() => <AccountsScreen />}
-        </Tab.Screen>
-      </Tab.Navigator>
+      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ZP.bg0 } }}>
+        {mode == null ? (
+          <Stack.Screen name="ModeSelector" component={ModeSelectorScreen} />
+        ) : mode === "merchant" ? (
+          <Stack.Screen name="MerchantTabs" component={MerchantTabs} />
+        ) : (
+          <Stack.Screen name="AgentsTabs" component={AgentsTabs} />
+        )}
+
+        <Stack.Screen name="AccountDetail"     component={AccountDetailScreen} />
+        <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+        <Stack.Screen name="Transactions"      component={TransactionsScreen} />
+        <Stack.Screen name="CardDetail"        component={CardDetailScreen} />
+        <Stack.Screen name="Invoices"          component={InvoicesScreen} />
+        <Stack.Screen name="Contacts"          component={ContactsScreen} />
+        <Stack.Screen name="PaymentLinks"      component={PaymentLinksScreen} />
+        <Stack.Screen name="MerchantSettings"  component={MerchantSettingsScreen} />
+
+        <Stack.Screen name="AgentDetail"      component={AgentDetailScreen} />
+        <Stack.Screen name="ZeniCards"        component={ZeniCardsScreen} />
+        <Stack.Screen name="ZeniCardDetail"   component={ZeniCardDetailScreen} />
+        <Stack.Screen name="Approvals"        component={ApprovalsScreen} />
+        <Stack.Screen name="Audit"            component={AuditScreen} />
+        <Stack.Screen name="Compliance"       component={ComplianceScreen} />
+        <Stack.Screen name="AgentsSettings"   component={AgentsSettingsScreen} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
-}
-
-// These wrappers inject navigation helpers so the screens stay
-// navigation-library-agnostic (easier to migrate to Expo Router later).
-function HomeScreenWithNav() {
-  return <HomeScreen goAgents={() => { /* handled by tab bar */ }} goWallets={() => { /* future */ }} goApprovals={() => { /* handled by tab bar */ }} />;
-}
-function AgentsScreenWithNav() {
-  return <AgentsScreen onOpenAgent={() => { /* future: stack push */ }} />;
 }

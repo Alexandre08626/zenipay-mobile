@@ -1,31 +1,37 @@
-// Gradient CTA — uses the signature 3-stop ZeniPay gradient and
-// fires a haptic impact on press so the button feels native.
-
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { ZP } from "../../constants/brand";
 
-export interface GradientButtonProps {
+type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Size = "sm" | "md" | "lg";
+
+const SIZE: Record<Size, { padH: number; padV: number; font: number; gap: number }> = {
+  sm: { padH: 14, padV: 9,  font: 12, gap: 6 },
+  md: { padH: 20, padV: 13, font: 14, gap: 8 },
+  lg: { padH: 24, padV: 16, font: 16, gap: 10 },
+};
+
+export function GradientButton({
+  label, onPress, loading, disabled, icon, variant = "primary", size = "md", fullWidth, style,
+}: {
   label: string;
   onPress?: () => void | Promise<void>;
   loading?: boolean;
   disabled?: boolean;
-  variant?: "primary" | "ghost";
-  size?: "sm" | "md" | "lg";
   icon?: React.ReactNode;
+  variant?: Variant;
+  size?: Size;
   fullWidth?: boolean;
-}
+  style?: ViewStyle;
+}) {
+  const scale = useSharedValue(1);
+  const aStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-export function GradientButton({
-  label, onPress, loading = false, disabled = false,
-  variant = "primary", size = "md", icon, fullWidth,
-}: GradientButtonProps) {
+  const S = SIZE[size];
   const isDisabled = disabled || loading;
-  const padH = size === "lg" ? 24 : size === "sm" ? 14 : 18;
-  const padV = size === "lg" ? 14 : size === "sm" ? 9 : 12;
-  const fontSize = size === "lg" ? 16 : size === "sm" ? 12 : 14;
 
   const press = async () => {
     if (isDisabled) return;
@@ -35,67 +41,95 @@ export function GradientButton({
 
   const inner = (
     <View style={{
-      paddingHorizontal: padH, paddingVertical: padV,
-      flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+      paddingHorizontal: S.padH, paddingVertical: S.padV,
+      flexDirection: "row", alignItems: "center", justifyContent: "center", gap: S.gap,
     }}>
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? "#fff" : ZP.violet} size="small" />
+        <ActivityIndicator color={variant === "primary" || variant === "danger" ? "#fff" : ZP.text} size="small" />
       ) : (
         <>
           {icon}
           <Text style={{
-            color: variant === "primary" ? "#fff" : ZP.text,
-            fontSize, fontWeight: "700", letterSpacing: 0.2,
+            color: labelColor(variant),
+            fontFamily: ZP.font.sansSemi,
+            fontSize: S.font,
+            letterSpacing: 0.1,
           }}>{label}</Text>
         </>
       )}
     </View>
   );
 
-  if (variant === "ghost") {
+  const container: ViewStyle = {
+    borderRadius: 14,
+    alignSelf: fullWidth ? "stretch" : "flex-start",
+    opacity: isDisabled ? 0.55 : 1,
+    ...style,
+  };
+
+  if (variant === "primary") {
     return (
-      <Pressable
-        onPress={press}
-        disabled={isDisabled}
-        style={({ pressed }) => ([styles.ghost, {
-          alignSelf: fullWidth ? "stretch" : "flex-start",
-          opacity: isDisabled ? 0.5 : pressed ? 0.7 : 1,
-        }])}
-      >
-        {inner}
-      </Pressable>
+      <Animated.View style={aStyle}>
+        <Pressable
+          onPress={press}
+          onPressIn={() => { scale.value = withTiming(0.97, { duration: 80 }); }}
+          onPressOut={() => { scale.value = withTiming(1, { duration: 120 }); }}
+          disabled={isDisabled}
+          style={[container, styles.primary]}
+        >
+          <LinearGradient
+            colors={ZP.gradient as unknown as [string, string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ borderRadius: 14 }}
+          >
+            {inner}
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
     );
   }
 
   return (
-    <Pressable
-      onPress={press}
-      disabled={isDisabled}
-      style={({ pressed }) => ({
-        borderRadius: 14,
-        alignSelf: fullWidth ? "stretch" : "flex-start",
-        opacity: isDisabled ? 0.55 : pressed ? 0.92 : 1,
-        shadowColor: ZP.cyan, shadowOpacity: 0.22, shadowRadius: 14, shadowOffset: { width: 0, height: 6 },
-        elevation: 3,
-      })}
-    >
-      <LinearGradient
-        colors={ZP.gradient as unknown as [string, string, string]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ borderRadius: 14 }}
+    <Animated.View style={aStyle}>
+      <Pressable
+        onPress={press}
+        onPressIn={() => { scale.value = withTiming(0.97, { duration: 80 }); }}
+        onPressOut={() => { scale.value = withTiming(1, { duration: 120 }); }}
+        disabled={isDisabled}
+        style={[
+          container,
+          variant === "ghost" ? styles.ghost : undefined,
+          variant === "secondary" ? styles.secondary : undefined,
+          variant === "danger" ? styles.danger : undefined,
+        ]}
       >
         {inner}
-      </LinearGradient>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
+function labelColor(v: Variant): string {
+  if (v === "primary" || v === "danger") return "#fff";
+  if (v === "ghost") return ZP.muted;
+  return ZP.text;
+}
+
 const styles = StyleSheet.create({
+  primary: {
+    shadowColor: ZP.cyan, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
   ghost: {
-    borderRadius: 14,
-    backgroundColor: ZP.bg2,
-    borderWidth: 1,
+    backgroundColor: "transparent",
+  },
+  secondary: {
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
     borderColor: ZP.border,
+  },
+  danger: {
+    backgroundColor: ZP.danger,
   },
 });

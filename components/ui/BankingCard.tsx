@@ -1,45 +1,49 @@
-// White card with a subtle shadow and a 3px accent top-border that
-// picks up the per-section brand colour (cyan / violet / green / pink /
-// neutral). Used everywhere throughout the app.
-
 import React from "react";
 import { View, ViewStyle } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { ZP } from "../../constants/brand";
 
-type Accent = "cyan" | "violet" | "green" | "pink" | "neutral";
+type Accent = "cyan" | "violet" | "green" | "pink" | "orange" | "gradient" | "none";
 
-const ACCENT: Record<Accent, string | undefined> = {
-  cyan:   ZP.cyan,
+const ACCENT_MAP: Record<Exclude<Accent, "gradient" | "none">, string> = {
+  cyan: ZP.cyan,
   violet: ZP.violet,
-  green:  ZP.green,
-  pink:   ZP.pink,
-  neutral: undefined,
+  green: ZP.green,
+  pink: ZP.pink,
+  orange: ZP.orange,
 };
 
 export function BankingCard({
-  children, accent = "neutral", style, padding = 16,
+  children, accent = "none", style, padding = 16,
 }: {
   children: React.ReactNode;
   accent?: Accent;
   style?: ViewStyle | ViewStyle[];
   padding?: number;
 }) {
-  const color = ACCENT[accent];
   return (
     <View style={[{
       backgroundColor: "#fff",
       borderRadius: 16,
       borderWidth: 1,
       borderColor: ZP.border,
-      shadowColor: "#0f172a",
-      shadowOpacity: 0.06,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 4 },
       overflow: "hidden",
+      shadowColor: "#0f172a",
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
     }, style as ViewStyle]}>
-      {color && (
-        <View style={{ height: 3, backgroundColor: color }} />
-      )}
+      {accent === "gradient" ? (
+        <LinearGradient
+          colors={ZP.gradient as unknown as [string, string, string]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ height: 3, width: "100%" }}
+        />
+      ) : accent !== "none" ? (
+        <View style={{ height: 3, backgroundColor: ACCENT_MAP[accent] }} />
+      ) : null}
       <View style={{ padding }}>
         {children}
       </View>
