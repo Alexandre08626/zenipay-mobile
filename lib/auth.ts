@@ -4,10 +4,28 @@ import * as LocalAuthentication from "expo-local-authentication";
 import { supabase } from "./supabase";
 import {
   clearSession, getSupabaseAccessToken, getSupabaseRefreshToken,
-  isBiometricEnabled, saveEmail, saveMerchantId, saveSupabaseTokens,
+  isBiometricEnabled, saveAgentsOrg, saveEmail, saveMerchantId, saveSupabaseTokens,
   setBiometricEnabled,
 } from "./session";
 import { api } from "./api";
+
+interface MeResponse {
+  user: { id: string; email: string | null };
+  merchant_id: string | null;
+  merchant: { id: string; business_name: string | null; email: string | null; status: string } | null;
+  agents_org_id: string | null;
+}
+
+async function hydrateFromMe(): Promise<MeResponse | null> {
+  try {
+    const me = await api<MeResponse>("/api/auth/me");
+    if (me.merchant_id) await saveMerchantId(me.merchant_id);
+    if (me.agents_org_id) await saveAgentsOrg(me.agents_org_id);
+    return me;
+  } catch {
+    return null;
+  }
+}
 
 export interface AuthResult {
   ok: true;
@@ -24,13 +42,16 @@ export async function login(email: string, password: string): Promise<AuthResult
   await saveSupabaseTokens(data.session.access_token, data.session.refresh_token ?? null);
   await saveEmail(email.trim().toLowerCase());
 
-  // Best-effort merchant resolution via /api/auth/me fallback.
-  try {
-    const me = await api<{ merchant_id?: string | null }>("/api/auth/me");
-    if (me?.merchant_id) await saveMerchantId(me.merchant_id);
-  } catch { /* non-critical — some deployments don’t expose /api/auth/me yet */ }
+  // Hydrate merchant_id + agents_org_id so every subsequent scoped
+  // fetch carries the right identifiers and the same data surface the
+  // web dashboard sees for this user.
+  const me = await hydrateFromMe();
 
-  return { ok: true, email: email.trim().toLowerCase(), merchant_id: null };
+  return {
+    ok: true,
+    email: email.trim().toLowerCase(),
+    merchant_id: me?.merchant_id ?? null,
+  };
 }
 
 export async function logout(): Promise<void> {
@@ -49,6 +70,10 @@ export async function restoreSession(): Promise<boolean> {
     });
     if (error || !data?.session) return false;
     await saveSupabaseTokens(data.session.access_token, data.session.refresh_token ?? null);
+    // Re-hydrate merchant_id + agents_org_id on every restore so a
+    // merchant that only just got linked server-side picks it up on the
+    // next cold start without forcing a manual sign-out.
+    await hydrateFromMe();
     return true;
   } catch { return false; }
 }
