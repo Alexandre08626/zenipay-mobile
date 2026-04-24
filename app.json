@@ -41,7 +41,8 @@
         {
           "faceIDPermission": "Allow ZeniPay to use Face ID to unlock the app."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "apiBase": "https://zenipay.ca"

@@ -41,3 +41,6 @@ google-play-key.json
 # generated native folders
 /ios
 /android
+
+# Generated QR preview
+QR.png

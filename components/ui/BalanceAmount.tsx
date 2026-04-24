@@ -1,21 +1,19 @@
-// Monospace currency amount with a simple count-up animation on value
-// change. Sizes: sm / md / lg / xl.
-
 import React, { useEffect, useRef, useState } from "react";
-import { Platform, Text, TextStyle } from "react-native";
+import { Text, TextStyle } from "react-native";
 import { ZP, fmtMoney } from "../../constants/brand";
 
-const SIZE_MAP: Record<"sm" | "md" | "lg" | "xl", number> = {
-  sm: 18, md: 26, lg: 40, xl: 56,
+const SIZE: Record<"sm" | "md" | "lg" | "xl" | "hero", number> = {
+  sm: 16, md: 22, lg: 34, xl: 42, hero: 52,
 };
 
 export function BalanceAmount({
-  amount, currency = "CAD", size = "md", style,
+  amount, currency = "CAD", size = "md", style, negativeAsDanger = true,
 }: {
   amount: number;
   currency?: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "hero";
   style?: TextStyle;
+  negativeAsDanger?: boolean;
 }) {
   const [display, setDisplay] = useState(amount);
   const startRef = useRef(amount);
@@ -24,7 +22,7 @@ export function BalanceAmount({
     const from = startRef.current;
     const to = amount;
     if (from === to) return;
-    const duration = 350;
+    const duration = 420;
     const t0 = Date.now();
     let raf: number | null = null;
     const step = () => {
@@ -38,14 +36,16 @@ export function BalanceAmount({
     return () => { if (raf != null) cancelAnimationFrame(raf); };
   }, [amount]);
 
+  const fs = SIZE[size];
+  const color = negativeAsDanger && display < 0 ? ZP.danger : ZP.text;
+
   return (
     <Text style={[{
-      fontSize: SIZE_MAP[size],
-      fontWeight: "800",
-      color: ZP.text,
-      letterSpacing: -0.5,
+      fontSize: fs,
+      fontFamily: ZP.font.monoMed,
+      color,
+      letterSpacing: size === "hero" || size === "xl" ? -0.8 : -0.3,
       fontVariant: ["tabular-nums"] as TextStyle["fontVariant"],
-      ...(Platform.OS === "ios" ? { fontFamily: "Menlo" } : { fontFamily: "monospace" }),
     }, style]}>
       {fmtMoney(display, currency)}
     </Text>
