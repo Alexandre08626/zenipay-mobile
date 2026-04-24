@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "zenipay-mobile",
-    "slug": "zenipay-mobile",
+    "name": "ZeniPay",
+    "slug": "zenipay",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,21 +10,41 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.zenipay.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID to securely unlock ZeniPay.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.zenipay.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FFFFFF"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow ZeniPay to use Face ID to unlock the app."
+        }
+      ]
+    ],
+    "extra": {
+      "apiBase": "https://zenipay.ca"
     }
   }
 }
