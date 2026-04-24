@@ -1,7 +1,6 @@
-import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
+import React, { useRef } from "react";
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { ZP } from "../../constants/brand";
 
@@ -27,9 +26,7 @@ export function GradientButton({
   fullWidth?: boolean;
   style?: ViewStyle;
 }) {
-  const scale = useSharedValue(1);
-  const aStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-
+  const scale = useRef(new Animated.Value(1)).current;
   const S = SIZE[size];
   const isDisabled = disabled || loading;
 
@@ -37,6 +34,13 @@ export function GradientButton({
     if (isDisabled) return;
     try { await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch { /* ignore */ }
     await onPress?.();
+  };
+
+  const pressIn = () => {
+    Animated.timing(scale, { toValue: 0.97, duration: 80, useNativeDriver: true }).start();
+  };
+  const pressOut = () => {
+    Animated.timing(scale, { toValue: 1, duration: 120, useNativeDriver: true }).start();
   };
 
   const inner = (
@@ -69,11 +73,11 @@ export function GradientButton({
 
   if (variant === "primary") {
     return (
-      <Animated.View style={aStyle}>
+      <Animated.View style={{ transform: [{ scale }] }}>
         <Pressable
           onPress={press}
-          onPressIn={() => { scale.value = withTiming(0.97, { duration: 80 }); }}
-          onPressOut={() => { scale.value = withTiming(1, { duration: 120 }); }}
+          onPressIn={pressIn}
+          onPressOut={pressOut}
           disabled={isDisabled}
           style={[container, styles.primary]}
         >
@@ -91,11 +95,11 @@ export function GradientButton({
   }
 
   return (
-    <Animated.View style={aStyle}>
+    <Animated.View style={{ transform: [{ scale }] }}>
       <Pressable
         onPress={press}
-        onPressIn={() => { scale.value = withTiming(0.97, { duration: 80 }); }}
-        onPressOut={() => { scale.value = withTiming(1, { duration: 120 }); }}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
         disabled={isDisabled}
         style={[
           container,

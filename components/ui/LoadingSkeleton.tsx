@@ -1,8 +1,5 @@
-import React, { useEffect } from "react";
-import { View, ViewStyle } from "react-native";
-import Animated, {
-  useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate,
-} from "react-native-reanimated";
+import React, { useEffect, useRef } from "react";
+import { Animated, View, ViewStyle } from "react-native";
 import { ZP } from "../../constants/brand";
 
 export function Skeleton({
@@ -13,13 +10,18 @@ export function Skeleton({
   radius?: number;
   style?: ViewStyle;
 }) {
-  const v = useSharedValue(0);
+  const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    v.value = withRepeat(withTiming(1, { duration: 1100 }), -1, true);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(v, { toValue: 1, duration: 1100, useNativeDriver: true }),
+        Animated.timing(v, { toValue: 0, duration: 1100, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
   }, [v]);
-  const aStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(v.value, [0, 1], [0.6, 1]),
-  }));
+  const opacity = v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
   return (
     <Animated.View
       style={[{
@@ -27,7 +29,8 @@ export function Skeleton({
         height,
         borderRadius: radius,
         backgroundColor: ZP.bg3,
-      }, aStyle, style]}
+        opacity,
+      }, style]}
     />
   );
 }

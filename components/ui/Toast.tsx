@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import { Animated, Pressable, Text, View } from "react-native";
 import { X } from "lucide-react-native";
 import { ZP } from "../../constants/brand";
 
@@ -42,18 +41,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 function ToastRow({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
-  const y = useSharedValue(-60);
-  const op = useSharedValue(0);
+  const y = useRef(new Animated.Value(-60)).current;
+  const op = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
-    y.value = withSpring(0, { damping: 18 });
-    op.value = withTiming(1, { duration: 200 });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const aStyle = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }], opacity: op.value }));
+    Animated.parallel([
+      Animated.spring(y, { toValue: 0, useNativeDriver: true, damping: 18, stiffness: 120 }),
+      Animated.timing(op, { toValue: 1, duration: 200, useNativeDriver: true }),
+    ]).start();
+  }, [y, op]);
+
   const bg = toast.tone === "success" ? ZP.successBg : toast.tone === "error" ? ZP.dangerBg : toast.tone === "warning" ? ZP.warningBg : ZP.infoBg;
   const fg = toast.tone === "success" ? ZP.success   : toast.tone === "error" ? ZP.danger   : toast.tone === "warning" ? ZP.warning   : ZP.info;
 
   return (
-    <Animated.View style={[aStyle, {
+    <Animated.View style={{
+      transform: [{ translateY: y }], opacity: op,
       backgroundColor: "#fff",
       borderRadius: 12,
       borderWidth: 1,
@@ -63,7 +66,7 @@ function ToastRow({ toast, onDismiss }: { toast: Toast; onDismiss: () => void })
       shadowRadius: 14,
       shadowOffset: { width: 0, height: 6 },
       elevation: 6,
-    }]}>
+    }}>
       <View style={{ flexDirection: "row", alignItems: "center", padding: 12, gap: 10 }}>
         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: fg }} />
         <Text style={{
